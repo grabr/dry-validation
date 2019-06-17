@@ -18,6 +18,7 @@ theme:
     primary: 'teal'
     accent: 'teal'
   logo: 'images/dry-rb.png'
+  favicon: 'images/dry-rb-fav.png'
 markdown_extensions:
   - admonition
   - codehilite
