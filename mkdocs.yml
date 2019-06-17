@@ -1,1 +1,8 @@
-site_name: dry-validation documentation
+site_name: "dry-validation documentation"
+repo_url: https://github.com/dry-rb/dry-validation
+edit_uri: edit/master/docs/
+copyright: "Copyright &copy; 2015-2019 dry-rb team"
+docs_dir: manual
+pages:
+  - Home: index.md
+theme: readthedocsg
