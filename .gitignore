@@ -12,4 +12,5 @@ yard
 .yardoc/
 .rubocop.yml
 docs/_build
+site
 
