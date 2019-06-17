@@ -12,7 +12,11 @@ nav:
   - Macros: macros.md
   - External Dependencies: external-dependencies.md
   - Extensions: extensions.md
-theme: material
+theme:
+  name: material
+  palette:
+    primary: 'teal'
+    accent: 'teal'
 markdown_extensions:
   - admonition
   - codehilite
