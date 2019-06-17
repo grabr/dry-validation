@@ -12,6 +12,6 @@ nav:
   - Macros: macros.md
   - External Dependencies: external-dependencies.md
   - Extensions: extensions.md
-theme: readthedocs
+theme: material
 markdown_extensions:
   - admonition
