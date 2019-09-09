@@ -56,7 +56,6 @@ module Dry
       def add(message)
         source_messages << message
         messages << message
-        initialize_placeholders!
         self
       end
 
@@ -102,18 +101,42 @@ module Dry
 
       # @api private
       def messages_map
-        @messages_map ||= reduce(placeholders) { |hash, msg|
-          node = msg.path.reduce(hash) { |a, e| a.is_a?(Hash) ? a[e] : a.last[e] }
-          (node[0].is_a?(::Array) ? node[0] : node) << msg.dump
-          hash
+        index = build_index
+
+        each_with_object(EMPTY_HASH.dup) { |msg, hash|
+          node = hash
+
+          msg.path.each_with_object([]) { |key, path|
+            path << key
+
+            i = index.dig(*path)
+
+            next_node =
+              if i[:__base]
+                i[:__base][:__idx] ? [[]] : []
+              else
+                {}
+              end
+
+            node =
+              if i[:__idx]
+                (node[i[:__idx]] ||= { key => next_node })[key]
+              else
+                node[key] ||= next_node
+              end
+
+            if next_node.is_a?(Array) && path == msg.path
+              ((idx = i[:__base][:__idx]) ? node[idx] : node) << msg.dump
+            end
+          }
         }
       end
 
       # @api private
-      #
+
       # rubocop:disable Metrics/AbcSize
       # rubocop:disable Metrics/PerceivedComplexity
-      def initialize_placeholders!
+      def initialize_placeholders! # TODO: remove when schema is fixed too
         @placeholders = unique_paths.each_with_object(EMPTY_HASH.dup) { |path, hash|
           curr_idx = 0
           last_idx = path.size - 1
@@ -124,19 +147,52 @@ module Dry
 
             next_node =
               if node.is_a?(Array) && key.is_a?(Symbol)
-                node_hash = (node << [] << {}).last
-                node_hash[key] || (node_hash[key] = curr_idx < last_idx ? {} : [])
+                {}.tap { |n| (node << [] << n).uniq! }
               else
-                node[key] || (node[key] = curr_idx < last_idx ? {} : [])
+                node
               end
 
-            node = next_node
+            node = next_node[key] || (next_node[key] = curr_idx < last_idx ? {} : [])
+
             curr_idx += 1
           end
         }
       end
+
+      # @api private
+
       # rubocop:enable Metrics/AbcSize
       # rubocop:enable Metrics/PerceivedComplexity
+      def build_index
+        hash = EMPTY_HASH.dup
+        depth = 0
+        paths = []
+
+        while depth == 0 || !paths.empty?
+          paths = unique_paths.sort_by(&:size).select { |p| p.size > depth }.each { |path|
+            depth_idx = 0
+
+            key_path = path[0..depth]
+            key = key_path.last
+            parent_node = depth == 0 ? hash : hash.dig(*path[0...depth])
+
+            node = (parent_node[key] ||= {})
+
+            if depth > 0 && parent_node[:__base]
+              node[:__idx] ||= parent_node.reject { |k, _| k == :__idx }.size - 1
+              parent_node[:__base][:__idx] ||= 0
+            end
+
+            if path.size == depth + 1
+              node[:__base] = {}
+            end
+          }
+
+          depth += 1
+        end
+
+        hash
+      end
     end
   end
 end

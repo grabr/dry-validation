@@ -18,6 +18,7 @@ RSpec.describe Dry::Validation::Contract, '.rule' do
         optional(:details).hash do
           optional(:address).hash do
             required(:street).value(:string)
+            optional(:zipcode).value(:string)
           end
         end
       end
@@ -83,17 +84,22 @@ RSpec.describe Dry::Validation::Contract, '.rule' do
         key.failure('cannot be empty') if values[:details][:address][:street].strip.empty?
       end
 
+      contract_class.rule(details: { address: :zipcode }) do
+        key.failure('cannot be empty') if values[:details][:address][:zipcode].strip.empty?
+      end
+
       contract_class.rule(details: { address: :street }) do
         key.failure('must include a number') unless values[:details][:address][:street].match?(/\d+/)
       end
     end
 
     it 'applies the rule when nested value passed schema checks' do
-      expect(contract.(email: 'jane@doe.org', login: 'jane', details: { address: { street: ' ' } }).errors.to_h)
+      expect(contract.(email: 'jane@doe.org', login: 'jane', details: { address: { street: ' ', zipcode: ' ' } }).errors.to_h)
         .to eql(
           details: { address: [
             ['invalid no matter what', 'seriously invalid'],
-            { street: ['cannot be empty', 'must include a number'] }
+            { street: ['cannot be empty', 'must include a number'] },
+            { zipcode: ['cannot be empty'] }
           ] }
         )
     end
